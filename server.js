@@ -4,11 +4,46 @@ const bodyParser = require('body-parser');
 const expect = require('chai');
 const socket = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet'); // Security library
 
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const runner = require('./test-runner.js');
 
 const app = express();
+
+// Prevent MIME type sniffing
+app.use(helmet.noSniff());
+
+// Prevent XSS attacks
+app.use(helmet.xssFilter());
+
+// ✅ Prevent client-side caching
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
+// Fake PHP Header
+app.use((req, res, next) => {
+  res.setHeader('X-Powered-By', 'PHP 7.4.3');
+  next();
+});
+
+// Content Security Policy
+// app.use(
+//   helmet.contentSecurityPolicy({
+//     directives: {
+//       defaultSrc: ["'self'"],
+//       scriptSrc: ["'self'"],
+//       objectSrc: ["'none'"],
+//       imgSrc: ["'self'"],
+//       upgradeInsecureRequests: [],
+//     },
+//   })
+// );
 
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use('/assets', express.static(process.cwd() + '/assets'));
